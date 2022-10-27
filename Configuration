@@ -1,0 +1,69 @@
+#Set up NOM persistence DBMS
+
+If the DBMS is not newly created, ensure the following:
+
+  -That the default database for the user exists. This is done via the SHOW DATABASES command.
+
+  -That the default database for the user is empty. This is done via MATCH (n) RETURN count(n) which should return 0.
+ 
+  -That the default database for the user doesn’t contain any indexes or constraints. This is done via SHOW INDEXES and SHOW CONSTRAINTS.
+  
+
+# Self-Signed Certificate Generation
+java -jar ./server.jar ssc -n ddi \
+	-o /home/ddi/neo4j-ops-manager-server-1.2.1/certificates \
+	-p ddi123 \
+	-d localhost,irfandi \
+-i 127.0.0.1,192.168.18.247
+
+#setup neo4j-ops-manager-server.service
+
+[Unit]
+Description=Neo4j Ops Manager Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/ddi/neo4j-ops-manager-server-1.2.1/bin/server \
+    --spring.neo4j.uri=neo4j://192.168.18.158:7687 \
+    --spring.neo4j.authentication.username=neo4j \
+    --spring.neo4j.authentication.password=ddi123 \
+    --server.port=8080 \
+    --server.ssl.key-store-type=PKCS12 \
+    --server.ssl.key-store=file:/home/ddi/neo4j-ops-manager-server-1.2.1/certificates/ddi.pfx \
+    --server.ssl.key-store-password=ddi123 \
+    --grpc.server.port=9090 \
+    --grpc.server.security.key-store-type=PKCS12 \
+    --grpc.server.security.key-store=file:/home/ddi/neo4j-ops-manager-server-1.2.1//certificates/ddi.pfx \
+    --grpc.server.security.key-store-password=ddi123 \
+    --jwt.secret=please-set-a-random-secret-string-here-for-jwt-signing
+Restart=on-failure
+TimeoutSec=120
+
+# Any of the command line parameters can be specified as an environment variable if needed.
+# Below is environment variable counterparts of the above command line parameters, update
+# and uncomment based on your requirements.
+; Environment="SPRING_NEO4J_URI=neo4j://localhost:7687"
+; Environment="SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j"
+; Environment="SPRING_NEO4J_AUTHENTICATION_PASSWORD=neo4j"
+; Environment="SERVER_PORT=8080"
+; Environment="SERVER_SSL_KEY_STORE_TYPE=PKCS12"
+; Environment="SERVER_SSL_KEY_STORE=SERVER_PATH/certificates/server.pfx"
+; Environment="SERVER_SSL_KEY_STORE_PASSWORD=changeit"
+; Environment="GRPC_SERVER_PORT=9090"
+; Environment="GRPC_SERVER_SECURITY_KEY_STORE_TYPE=PKCS12"
+; Environment="GRPC_SERVER_SECURITY_KEY_STORE=SERVER_PATH/certificates/server.pfx"
+; Environment="GRPC_SERVER_SECURITY_KEY_STORE_PASSWORD=changeit"
+; Environment="JWT_SECRET=please-set-a-random-secret-string-here-for-jwt-signing"
+
+# Logs will be captured by journal by default. You can also specify a dedicated log file
+# if desired. In that case uncomment and configure the full path to the log file you want to
+# use. Please ensure the server process has correct permissions for the log path specified.
+; Environment="LOGGING_FILE_NAME=/path/to/log/file/nom.log"
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
